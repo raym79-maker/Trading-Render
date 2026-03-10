@@ -23,24 +23,26 @@ class BinanceClient:
             }
         })
         
-        # Forzamos las URLs de la Testnet de Futuros de forma manual
+        # Forzamos las URLs de la Testnet de Futuros manualmente
         self.exchange.urls['api']['fapiPublic'] = 'https://testnet.binancefuture.com/fapi/v1'
         self.exchange.urls['api']['fapiPrivate'] = 'https://testnet.binancefuture.com/fapi/v1'
 
     def get_price(self, symbol):
-        # Limpiamos el símbolo (ej: de BTC/USDT a BTCUSDT)
+        # Limpiamos el símbolo: BTC/USDT -> BTCUSDT
         clean_symbol = symbol.replace('/', '').split(':')[0]
-        # Usamos la llamada directa al ticker de precios de futuros
+        # Llamada directa al ticker de futuros
         ticker = self.exchange.fapiPublicGetTickerPrice({'symbol': clean_symbol})
         return float(ticker['price'])
 
     def get_balance(self):
         # SOLUCIÓN AL ERROR -5000:
-        # Usamos fapiPrivateGetAccount, que es el endpoint más estable en Testnet
+        # Usamos fapiPrivateGetAccount, que es el "puerta de entrada" que nunca falla en Testnet
         account_info = self.exchange.fapiPrivateGetAccount()
-        # Buscamos el saldo disponible en USDT dentro de la cuenta de futuros
-        for asset in account_info['assets']:
+        
+        # Buscamos el saldo disponible en USDT dentro de la cuenta
+        for asset in account_info.get('assets', []):
             if asset['asset'] == 'USDT':
+                # 'walletBalance' es tu saldo total en la demo
                 return float(asset['walletBalance'])
         return 0.0
 
