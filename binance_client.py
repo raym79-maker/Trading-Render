@@ -3,11 +3,11 @@ import ccxt
 
 class BinanceClient:
     def __init__(self):
-        # Leemos las llaves de la Testnet de Futuros
+        # 1. Limpieza total de llaves
         api_key = os.environ.get('BINANCE_API_KEY', '').strip()
         api_secret = os.environ.get('BINANCE_API_SECRET', '').strip()
         
-        # Proxy de España para saltar el bloqueo regional de Render (EE.UU.)
+        # Proxy de España (Madrid)
         proxy_url = "http://oorqsbda:vu935t81ybpq@64.137.96.74:6641"
 
         self.exchange = ccxt.binance({
@@ -19,26 +19,28 @@ class BinanceClient:
                 'https': proxy_url,
             },
             'options': {
-                'defaultType': 'future', # Modo Futuros
+                'defaultType': 'future', # Definimos Futuros
             },
             'urls': {
                 'api': {
-                    'public': 'https://testnet.binancefuture.com/fapi/v1',
-                    'private': 'https://testnet.binancefuture.com/fapi/v1',
+                    'fapiPublic': 'https://testnet.binancefuture.com/fapi/v1',
+                    'fapiPrivate': 'https://testnet.binancefuture.com/fapi/v1',
                 }
             }
         })
 
-    # Esta es la función que falta en tus logs actuales
     def get_price(self, symbol):
-        # Asegúrate que en bot.py pases el símbolo como 'BTCUSDT'
-        ticker = self.exchange.fetch_ticker(symbol)
-        return ticker['last']
+        # Para futuros de Binance, usa 'BTCUSDT' (sin barra)
+        ticker = self.exchange.fapiPublicGetTickerPrice({'symbol': symbol.replace('/', '')})
+        return float(ticker['price'])
 
     def get_balance(self):
-        balance = self.exchange.fetch_balance()
-        # En futuros el balance se extrae del total disponible en la billetera
-        return balance['total'].get('USDT', 0)
+        # En futuros Testnet, se usa fapiPrivateGetAccount
+        balance = self.exchange.fapiPrivateGetAccount()
+        for asset in balance['assets']:
+            if asset['asset'] == 'USDT':
+                return float(asset['walletBalance'])
+        return 0.0
 
     def place_order(self, symbol, side, amount):
         return self.exchange.create_market_order(symbol, side.lower(), amount)
