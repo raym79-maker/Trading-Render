@@ -3,18 +3,15 @@ import ccxt
 
 class BinanceClient:
     def __init__(self):
-        # Capturamos las llaves
-        api_key = os.environ.get('BINANCE_API_KEY', '').strip()
-        api_secret = os.environ.get('BINANCE_API_SECRET', '').strip()
+        # 1. Limpieza de variables (quitamos espacios accidentales)
+        api_key = str(os.environ.get('BINANCE_API_KEY', '')).strip()
+        api_secret = str(os.environ.get('BINANCE_API_SECRET', '')).strip()
         
-        # LOG DE DEPURACIÓN (Seguro)
-        if not api_key or not api_secret:
-            print("ERROR CRÍTICO: Las variables de entorno están VACÍAS en Render.")
-        else:
-            # Imprime longitud y los extremos para que tú mismo verifiques
-            print(f"DEBUG: API Key recibida. Longitud: {len(api_key)} caracteres.")
-            print(f"DEBUG: Empieza con '{api_key[:4]}' y termina con '{api_key[-4:]}'")
-
+        # 2. LOG CRÍTICO (Para que tú veas qué está leyendo Render)
+        print(f"--- DIAGNÓSTICO DE INICIO ---")
+        print(f"Longitud API Key: {len(api_key)}")
+        print(f"Empieza con: {api_key[:4]} | Termina con: {api_key[-4:]}")
+        
         # Proxy de España
         proxy_url = "http://oorqsbda:vu935t81ybpq@64.137.96.74:6641"
 
@@ -26,13 +23,6 @@ class BinanceClient:
                 'http': proxy_url,
                 'https': proxy_url,
             },
-            # Forzamos a que use la API de Binance.com explícitamente
-            'urls': {
-                'api': {
-                    'public': 'https://api.binance.com/api/v3',
-                    'private': 'https://api.binance.com/api/v3',
-                }
-            },
             'options': {'defaultType': 'spot'}
         })
 
@@ -41,6 +31,7 @@ class BinanceClient:
         return ticker['last']
 
     def get_balance(self):
+        # Intentamos obtener el balance para probar la conexión privada
         balance = self.exchange.fetch_balance()
         return balance['total']['USDT']
 
