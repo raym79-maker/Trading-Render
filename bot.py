@@ -1,54 +1,56 @@
+import logging
+import time
 import os
-import ccxt
-from dotenv import load_dotenv
+from threading import Thread
+from flask import Flask
+from binance_client import BinanceClient
 
-load_dotenv()
+# --- CONFIGURACIÓN DE RENDER (KEEP ALIVE) ---
+app = Flask('')
 
-class BinanceClient:
-    def __init__(self):
-        # Elegimos el proxy de España de tu lista de Webshare
-        proxy_url = "http://oorqsbda:vu935t81ybpq@64.137.96.74:6641"
+@app.route('/')
+def home():
+    return "Bot de Trading Operando 24/7"
 
-        self.exchange = ccxt.binance({
-            'apiKey': os.getenv('BINANCE_API_KEY'),
-            'secret': os.getenv('BINANCE_API_SECRET'),
-            'enableRateLimit': True,
-            'proxies': {
-                'http': proxy_url,
-                'https': proxy_url,
-            },
-            'options': {
-                'defaultType': 'spot',
-            }
-        })
-    # ... el resto de tus funciones (get_balance, etc) se mantienen igual
+def run_server():
+    # Render asigna el puerto 10000 por defecto
+    app.run(host='0.0.0.0', port=10000)
+
+# --- CONFIGURACIÓN DEL BOT ---
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+
+client = BinanceClient()
 
 def ejecutar_ciclo(objetivo_compra=95000):
     try:
-        logging.info("Iniciando ciclo de verificación...")
-        
-        # Obtenemos datos del mercado
-        saldo = client.get_balance()
+        logging.info("Verificando mercado...")
         precio = client.get_price("BTCUSDT")
+        saldo = client.get_balance()
         
-        logging.info(f"Saldo: {saldo} USDT | Precio BTC: {precio} USDT")
+        logging.info(f"Precio BTC: {precio} USDT | Saldo: {saldo} USDT")
         
-        # Aquí la indentación debe ser exacta (usualmente 8 espacios respecto al inicio)
         if precio <= objetivo_compra:
-            logging.warning(f"¡Precio {precio} <= {objetivo_compra}! Ejecutando orden de compra...")
-            try:
-                # Calculamos una cantidad que sume al menos 105 USDT para estar seguros
-                cantidad_calculada = round(105 / precio, 3) 
-                orden = client.place_order("BTCUSDT", "BUY", str(cantidad_calculada))
-                logging.info(f"Orden ejecutada: {cantidad_calculada} BTC. ID: {orden['orderId']}")
-            except Exception as e:
-                logging.error(f"Fallo al ejecutar la compra: {e}")
+            logging.warning(f"¡Oportunidad! Precio {precio} <= {objetivo_compra}")
+            cantidad = round(105 / precio, 4)
+            orden = client.place_order("BTCUSDT", "BUY", cantidad)
+            logging.info(f"Compra exitosa! ID: {orden['id']}")
         else:
-            logging.info(f"El precio se mantiene por encima del objetivo ({objetivo_compra}).")
+            logging.info("Precio por encima del objetivo. Esperando...")
             
     except Exception as e:
-        logging.error(f"Error en el ciclo de ejecución: {e}")
+        logging.error(f"Error en el ciclo: {e}")
 
 if __name__ == "__main__":
-
-    ejecutar_ciclo()
+    # 1. Iniciamos el servidor web en un hilo aparte para Render
+    t = Thread(target=run_server)
+    t.start()
+    
+    # 2. Bucle infinito del bot
+    logging.info("Bot iniciado correctamente en la nube.")
+    while True:
+        ejecutar_ciclo()
+        time.sleep(60) # Espera 60 segundos por ciclo
