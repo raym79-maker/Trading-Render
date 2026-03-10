@@ -3,10 +3,11 @@ import ccxt
 
 class BinanceClient:
     def __init__(self):
+        # 1. Limpieza de llaves
         api_key = os.environ.get('BINANCE_API_KEY', '').strip()
         api_secret = os.environ.get('BINANCE_API_SECRET', '').strip()
         
-        # Proxy de España (Madrid) necesario para Render (EE.UU.)
+        # Proxy de España (Madrid)
         proxy_url = "http://oorqsbda:vu935t81ybpq@64.137.96.74:6641"
 
         self.exchange = ccxt.binance({
@@ -18,27 +19,29 @@ class BinanceClient:
                 'https': proxy_url,
             },
             'options': {
-                'defaultType': 'future', # Modo Futuros
+                'defaultType': 'future', 
             }
         })
-
-        # --- SOLUCIÓN AL ERROR DE DEPRECATION ---
-        # En lugar de set_sandbox_mode(True), forzamos las URLs de la Testnet
+        
+        # Forzamos las URLs de la Testnet de Futuros de forma manual
         self.exchange.urls['api']['fapiPublic'] = 'https://testnet.binancefuture.com/fapi/v1'
         self.exchange.urls['api']['fapiPrivate'] = 'https://testnet.binancefuture.com/fapi/v1'
 
     def get_price(self, symbol):
-        # Limpiamos símbolo: BTC/USDT -> BTCUSDT
+        # Limpiamos el símbolo (ej: de BTC/USDT a BTCUSDT)
         clean_symbol = symbol.replace('/', '').split(':')[0]
+        # Usamos la llamada directa al ticker de precios de futuros
         ticker = self.exchange.fapiPublicGetTickerPrice({'symbol': clean_symbol})
         return float(ticker['price'])
 
     def get_balance(self):
-        # Usamos el endpoint que sí permite GET en la Testnet
-        balances = self.exchange.fapiPrivateGetBalance()
-        for item in balances:
-            if item['asset'] == 'USDT':
-                return float(item['balance'])
+        # SOLUCIÓN AL ERROR -5000:
+        # Usamos fapiPrivateGetAccount, que es el endpoint más estable en Testnet
+        account_info = self.exchange.fapiPrivateGetAccount()
+        # Buscamos el saldo disponible en USDT dentro de la cuenta de futuros
+        for asset in account_info['assets']:
+            if asset['asset'] == 'USDT':
+                return float(asset['walletBalance'])
         return 0.0
 
     def place_order(self, symbol, side, amount):
