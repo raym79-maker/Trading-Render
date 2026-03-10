@@ -1,8 +1,4 @@
-# Librería necesaria para manejar variables de entorno (API keys seguras)
-python-dotenv
-
-# Librerías de red y peticiones (Si tu cliente de binance usa 'requests' o 'ccxt')
-requests
 ccxt
-
-# Agrega aquí cualquier otra librería que importe tu archivo 'binance_client.py'
+python-dotenv
+flask
+requests
