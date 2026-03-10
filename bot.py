@@ -1,18 +1,27 @@
-import logging
-from binance_client import BinanceClient
+import os
+import ccxt
+from dotenv import load_dotenv
 
-# Configuración del Logger
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("bot_trading.log"), 
-        logging.StreamHandler()                 
-    ]
-)
+load_dotenv()
 
-# Inicializamos el cliente
-client = BinanceClient()
+class BinanceClient:
+    def __init__(self):
+        # Elegimos el proxy de España de tu lista de Webshare
+        proxy_url = "http://oorqsbda:vu935t81ybpq@64.137.96.74:6641"
+
+        self.exchange = ccxt.binance({
+            'apiKey': os.getenv('BINANCE_API_KEY'),
+            'secret': os.getenv('BINANCE_API_SECRET'),
+            'enableRateLimit': True,
+            'proxies': {
+                'http': proxy_url,
+                'https': proxy_url,
+            },
+            'options': {
+                'defaultType': 'spot',
+            }
+        })
+    # ... el resto de tus funciones (get_balance, etc) se mantienen igual
 
 def ejecutar_ciclo(objetivo_compra=95000):
     try:
@@ -41,4 +50,5 @@ def ejecutar_ciclo(objetivo_compra=95000):
         logging.error(f"Error en el ciclo de ejecución: {e}")
 
 if __name__ == "__main__":
+
     ejecutar_ciclo()
