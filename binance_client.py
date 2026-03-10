@@ -3,16 +3,17 @@ import ccxt
 
 class BinanceClient:
     def __init__(self):
-        api_key = str(os.environ.get('BINANCE_API_KEY', '')).strip()
-        api_secret = os.environ.get('BINANCE_API_SECRET', '')).strip()
+        # Corregido el error de paréntesis que causó el Deploy Failed
+        api_key = os.environ.get('BINANCE_API_KEY', '').strip()
+        api_secret = os.environ.get('BINANCE_API_SECRET', '').strip()
         
-        # SIN PROXY para la Testnet
         self.exchange = ccxt.binance({
             'apiKey': api_key,
             'secret': api_secret,
             'enableRateLimit': True,
             'options': {'defaultType': 'spot'}
         })
+        # Activamos el modo demo
         self.exchange.set_sandbox_mode(True)
 
     def get_price(self, symbol):
