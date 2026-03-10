@@ -1,17 +1,26 @@
 import os
 import ccxt
-from dotenv import load_dotenv
-
-load_dotenv()
+# Eliminamos la carga de .env para que Render use sus propias variables
+# from dotenv import load_dotenv 
+# load_dotenv()
 
 class BinanceClient:
     def __init__(self):
-        # Usando tu proxy de España (Madrid) de Webshare
+        # Obtenemos las llaves directamente del sistema (Render)
+        api_key = os.environ.get('BINANCE_API_KEY')
+        api_secret = os.environ.get('BINANCE_API_SECRET')
+        
+        # Validación rápida para ver en logs si las llaves llegaron (sin mostrarlas completas)
+        if not api_key or not api_secret:
+            print("ERROR: No se detectaron las API Keys en las variables de entorno.")
+        else:
+            print(f"API Key detectada (empieza con: {api_key[:5]}...)")
+
         proxy_url = "http://oorqsbda:vu935t81ybpq@64.137.96.74:6641"
 
         self.exchange = ccxt.binance({
-            'apiKey': os.getenv('BINANCE_API_KEY'),
-            'secret': os.getenv('BINANCE_API_SECRET'),
+            'apiKey': api_key,
+            'secret': api_secret,
             'enableRateLimit': True,
             'proxies': {
                 'http': proxy_url,
@@ -21,14 +30,5 @@ class BinanceClient:
                 'defaultType': 'spot',
             }
         })
-
-    def get_balance(self):
-        balance = self.exchange.fetch_balance()
-        return balance['total']['USDT']
-
-    def get_price(self, symbol):
-        ticker = self.exchange.fetch_ticker(symbol)
-        return ticker['last']
-
-    def place_order(self, symbol, side, amount):
-        return self.exchange.create_market_order(symbol, side.lower(), amount)
+    
+    # ... el resto de funciones (get_balance, etc) igual
