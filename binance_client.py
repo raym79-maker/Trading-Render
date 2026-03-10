@@ -3,18 +3,19 @@ import ccxt
 
 class BinanceClient:
     def __init__(self):
-        # Leemos las variables directamente del sistema de Render
-        api_key = os.environ.get('BINANCE_API_KEY')
-        api_secret = os.environ.get('BINANCE_API_SECRET')
+        # Capturamos las llaves
+        api_key = os.environ.get('BINANCE_API_KEY', '').strip()
+        api_secret = os.environ.get('BINANCE_API_SECRET', '').strip()
         
-        # --- VALIDACIÓN DE SEGURIDAD PARA LOGS ---
-        if api_key and api_secret:
-            # Esto imprimirá algo como: "Leyendo API Key: abcd...wxyz"
-            print(f"INFO: API Key detectada: {api_key[:4]}...{api_key[-4:]}")
+        # LOG DE DEPURACIÓN (Seguro)
+        if not api_key or not api_secret:
+            print("ERROR CRÍTICO: Las variables de entorno están VACÍAS en Render.")
         else:
-            print("ERROR: ¡No se encontraron las API Keys en Environment de Render!")
+            # Imprime longitud y los extremos para que tú mismo verifiques
+            print(f"DEBUG: API Key recibida. Longitud: {len(api_key)} caracteres.")
+            print(f"DEBUG: Empieza con '{api_key[:4]}' y termina con '{api_key[-4:]}'")
 
-        # Tu proxy de España (Madrid)
+        # Proxy de España
         proxy_url = "http://oorqsbda:vu935t81ybpq@64.137.96.74:6641"
 
         self.exchange = ccxt.binance({
@@ -24,6 +25,13 @@ class BinanceClient:
             'proxies': {
                 'http': proxy_url,
                 'https': proxy_url,
+            },
+            # Forzamos a que use la API de Binance.com explícitamente
+            'urls': {
+                'api': {
+                    'public': 'https://api.binance.com/api/v3',
+                    'private': 'https://api.binance.com/api/v3',
+                }
             },
             'options': {'defaultType': 'spot'}
         })
