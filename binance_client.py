@@ -3,10 +3,11 @@ import ccxt
 
 class BinanceClient:
     def __init__(self):
+        # Leemos las llaves que Render inyecta
         api_key = os.environ.get('BINANCE_API_KEY')
         api_secret = os.environ.get('BINANCE_API_SECRET')
         
-        # El proxy que ya sabemos que funciona
+        # Tu proxy de España que ya vimos que funciona
         proxy_url = "http://oorqsbda:vu935t81ybpq@64.137.96.74:6641"
 
         self.exchange = ccxt.binance({
@@ -20,6 +21,7 @@ class BinanceClient:
             'options': {'defaultType': 'spot'}
         })
 
+    # ESTA ES LA FUNCIÓN QUE FALTA
     def get_price(self, symbol):
         ticker = self.exchange.fetch_ticker(symbol)
         return ticker['last']
