@@ -6,9 +6,9 @@ class BinanceClient:
         api_key = os.environ.get('BINANCE_API_KEY', '').strip()
         api_secret = os.environ.get('BINANCE_API_SECRET', '').strip()
         
+        # Proxy de España (Madrid) necesario para Render (EE.UU.)
         proxy_url = "http://oorqsbda:vu935t81ybpq@64.137.96.74:6641"
 
-        # Configuramos CCXT para que sea NATIVO de Futuros desde el inicio
         self.exchange = ccxt.binance({
             'apiKey': api_key,
             'secret': api_secret,
@@ -18,25 +18,28 @@ class BinanceClient:
                 'https': proxy_url,
             },
             'options': {
-                'defaultType': 'future', # Esto cambia las URLs base automáticamente
+                'defaultType': 'future', # Modo Futuros
             }
         })
-        
-        # Activamos el modo sandbox de forma que CCXT maneje los endpoints de Futuros
-        self.exchange.set_sandbox_mode(True)
+
+        # --- SOLUCIÓN AL ERROR DE DEPRECATION ---
+        # En lugar de set_sandbox_mode(True), forzamos las URLs de la Testnet
+        self.exchange.urls['api']['fapiPublic'] = 'https://testnet.binancefuture.com/fapi/v1'
+        self.exchange.urls['api']['fapiPrivate'] = 'https://testnet.binancefuture.com/fapi/v1'
 
     def get_price(self, symbol):
         # Limpiamos símbolo: BTC/USDT -> BTCUSDT
         clean_symbol = symbol.replace('/', '').split(':')[0]
-        # Usamos el método estándar de CCXT que ya sabe manejar Futuros
-        ticker = self.exchange.fetch_ticker(clean_symbol)
-        return float(ticker['last'])
+        ticker = self.exchange.fapiPublicGetTickerPrice({'symbol': clean_symbol})
+        return float(ticker['price'])
 
     def get_balance(self):
-        # fapiPrivateGetBalance a veces falla por el método GET en Testnet
-        # fetch_balance es más robusto porque CCXT elige el mejor endpoint
-        balance = self.exchange.fetch_balance()
-        return float(balance['total'].get('USDT', 0))
+        # Usamos el endpoint que sí permite GET en la Testnet
+        balances = self.exchange.fapiPrivateGetBalance()
+        for item in balances:
+            if item['asset'] == 'USDT':
+                return float(item['balance'])
+        return 0.0
 
     def place_order(self, symbol, side, amount):
         clean_symbol = symbol.replace('/', '').split(':')[0]
